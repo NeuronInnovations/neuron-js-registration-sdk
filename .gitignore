@@ -1,7 +1,6 @@
 .env
 flow.odp
 flow.pdf
-dist/*
 node_modules/*
 # IDE and OS files
 .DS_Store
