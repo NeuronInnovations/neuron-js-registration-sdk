@@ -322,7 +322,8 @@ export class HederaAccountService {
     async getTopicMessages(
         topicId: string,
         startSequence: number,
-        batchSize: number
+        batchSize: number,
+        order: string = 'asc'
     ): Promise<Array<{
         sequenceNumber: number;
         message: string;
@@ -346,7 +347,7 @@ export class HederaAccountService {
                 : 'https://testnet.mirrornode.hedera.com';
 
             // Fetch messages from the mirror node
-            const response = await axios.get(`${mirrorNodeUrl}/api/v1/topics/${topicId}/messages?limit=${batchSize}&order=asc`);
+            const response = await axios.get(`${mirrorNodeUrl}/api/v1/topics/${topicId}/messages?limit=${batchSize}&order=${order}`);
 
             if (!response.data || !response.data.messages) {
                 throw new Error('Invalid response from mirror node');

@@ -235,7 +235,7 @@ class HederaAccountService {
      * @param batchSize The number of messages to fetch
      * @returns Array of messages with their sequence numbers and timestamps
      */
-    async getTopicMessages(topicId, startSequence, batchSize) {
+    async getTopicMessages(topicId, startSequence, batchSize, order = 'asc') {
         try {
             // Validate inputs
             if (!topicId) {
@@ -252,7 +252,7 @@ class HederaAccountService {
                 ? 'https://mainnet-public.mirrornode.hedera.com'
                 : 'https://testnet.mirrornode.hedera.com';
             // Fetch messages from the mirror node
-            const response = await axios_1.default.get(`${mirrorNodeUrl}/api/v1/topics/${topicId}/messages?limit=${batchSize}&order=asc`);
+            const response = await axios_1.default.get(`${mirrorNodeUrl}/api/v1/topics/${topicId}/messages?limit=${batchSize}&order=${order}`);
             if (!response.data || !response.data.messages) {
                 throw new Error('Invalid response from mirror node');
             }
