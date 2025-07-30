@@ -235,9 +235,9 @@ class HederaContractService {
                     allDevices.push({
                         contract: owner, // Include owner address
                         peerID: peerIDs[j],
-                        stdOutTopic: "0.0" + stdOutTopics[j],
-                        stdInTopic: stdInTopics[j],
-                        stdErrTopic: stdErrTopics[j],
+                        stdOutTopic: "0.0." + stdOutTopics[j],
+                        stdInTopic: "0.0." + stdInTopics[j],
+                        stdErrTopic: "0.0." + stdErrTopics[j],
                         services,
                     });
                 }
