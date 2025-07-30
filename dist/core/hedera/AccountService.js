@@ -260,7 +260,7 @@ class HederaAccountService {
             return response.data.messages.map((msg) => ({
                 sequenceNumber: msg.sequence_number,
                 message: Buffer.from(msg.message, 'base64').toString('utf-8'),
-                timestamp: new Date(msg.consensus_timestamp)
+                timestamp: msg.consensus_timestamp
             }));
         }
         catch (error) {
