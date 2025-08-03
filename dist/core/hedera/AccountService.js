@@ -8,6 +8,8 @@ const sdk_1 = require("@hashgraph/sdk");
 const long_1 = __importDefault(require("long"));
 const axios_1 = __importDefault(require("axios"));
 const ContractService_1 = __importDefault(require("./ContractService"));
+const ethers_1 = require("ethers");
+const secp256k1_1 = require("@noble/secp256k1");
 class HederaAccountService {
     // private emailService = new EmailService();
     // private emailReceipient = process.env.EMAIL_NOTIFICATION || null;
@@ -317,6 +319,26 @@ class HederaAccountService {
         catch (error) {
             console.error('Error submitting message to topic:', error);
             throw new Error(`Failed to submit message to topic: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+    async getEvmAddressFromPublicKey(publicKey) {
+        const cleanPubKey = publicKey.replace('0x', '');
+        // Check if it's a compressed public key (starts with 02 or 03)
+        if (cleanPubKey.startsWith('02') || cleanPubKey.startsWith('03')) {
+            // Decompress the public key
+            const point = secp256k1_1.Point.fromHex(cleanPubKey);
+            const uncompressed = point.toRawBytes(false); // false = uncompressed
+            // Remove the 0x04 prefix and hash the remaining 64 bytes
+            const hash = (0, ethers_1.keccak256)(uncompressed.slice(1));
+            const address = '0x' + hash.slice(-40);
+            return (0, ethers_1.getAddress)(address);
+        }
+        else {
+            // For uncompressed public keys (starts with 04)
+            const pubKeyWithPrefix = publicKey.startsWith('0x') ? publicKey : '0x' + publicKey;
+            const hash = (0, ethers_1.keccak256)(pubKeyWithPrefix);
+            const address = '0x' + hash.slice(-40);
+            return (0, ethers_1.getAddress)(address);
         }
     }
     /**

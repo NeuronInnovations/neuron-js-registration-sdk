@@ -5,8 +5,8 @@ import axios from 'axios';
 import HederaContractService from "./ContractService";
 import { DIDManager } from "./did/DIDManager";
 import { VCManager } from "./did/VCmanager";
-
-
+import { keccak256, getAddress } from "ethers";
+import { Point } from "@noble/secp256k1";
 
 
 export class HederaAccountService {
@@ -431,6 +431,29 @@ export class HederaAccountService {
         }
     }
 
+async getEvmAddressFromPublicKey(publicKey:string):Promise<string>{
+
+ const cleanPubKey = publicKey.replace('0x', '');
+  
+  // Check if it's a compressed public key (starts with 02 or 03)
+  if (cleanPubKey.startsWith('02') || cleanPubKey.startsWith('03')) {
+    // Decompress the public key
+    const point = Point.fromHex(cleanPubKey);
+    const uncompressed = point.toRawBytes(false); // false = uncompressed
+    
+    // Remove the 0x04 prefix and hash the remaining 64 bytes
+    const hash = keccak256(uncompressed.slice(1));
+    const address = '0x' + hash.slice(-40);
+    return getAddress(address);
+  } else {
+    // For uncompressed public keys (starts with 04)
+    const pubKeyWithPrefix = publicKey.startsWith('0x') ? publicKey : '0x' + publicKey;
+    const hash = keccak256(pubKeyWithPrefix);
+    const address = '0x' + hash.slice(-40);
+    return getAddress(address);
+  }
+
+}
     /**
      * Fetches the admin key associated with an EVM address
      * @param evmAddress The EVM address to look up
