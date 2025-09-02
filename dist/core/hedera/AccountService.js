@@ -42,14 +42,8 @@ const long_1 = __importDefault(require("long"));
 const axios_1 = __importDefault(require("axios"));
 const ContractService_1 = __importDefault(require("./ContractService"));
 const ethers_1 = require("ethers");
-// Dynamic import for ES Module compatibility
-let secp256k1;
-async function getSecp256k1() {
-    if (!secp256k1) {
-        secp256k1 = await Promise.resolve().then(() => __importStar(require("@noble/secp256k1")));
-    }
-    return secp256k1;
-}
+const secp256k1 = __importStar(require("@noble/secp256k1"));
+const { Point } = secp256k1;
 class HederaAccountService {
     // private emailService = new EmailService();
     // private emailReceipient = process.env.EMAIL_NOTIFICATION || null;
@@ -366,8 +360,7 @@ class HederaAccountService {
         // Check if it's a compressed public key (starts with 02 or 03)
         if (cleanPubKey.startsWith('02') || cleanPubKey.startsWith('03')) {
             // Decompress the public key
-            const secp = await getSecp256k1();
-            const point = secp.Point.fromHex(cleanPubKey);
+            const point = Point.fromHex(cleanPubKey);
             const uncompressed = point.toRawBytes(false); // false = uncompressed
             // Remove the 0x04 prefix and hash the remaining 64 bytes
             const hash = (0, ethers_1.keccak256)(uncompressed.slice(1));
