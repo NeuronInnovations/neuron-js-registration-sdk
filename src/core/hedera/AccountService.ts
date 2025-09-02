@@ -6,7 +6,8 @@ import HederaContractService from "./ContractService";
 import { DIDManager } from "./did/DIDManager";
 import { VCManager } from "./did/VCmanager";
 import { keccak256, getAddress } from "ethers";
-import { Point } from "@noble/secp256k1";
+import * as secp256k1 from "@noble/secp256k1";
+const { Point } = secp256k1;
 
 
 export class HederaAccountService {
