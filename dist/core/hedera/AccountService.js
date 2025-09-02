@@ -1,11 +1,56 @@
-import { Client, AccountCreateTransaction, PublicKey, Hbar, PrivateKey, AccountId, TopicCreateTransaction, Status, AccountBalanceQuery, AccountInfoQuery, TransferTransaction, TransactionId, TopicMessageSubmitTransaction } from "@hashgraph/sdk";
-import Long from 'long';
-import axios from 'axios';
-import HederaContractService from "./ContractService";
-import { keccak256, getAddress } from "ethers";
-import * as secp256k1 from "@noble/secp256k1";
-const { Point } = secp256k1;
-export class HederaAccountService {
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HederaAccountService = void 0;
+const sdk_1 = require("@hashgraph/sdk");
+const long_1 = __importDefault(require("long"));
+const axios_1 = __importDefault(require("axios"));
+const ContractService_1 = __importDefault(require("./ContractService"));
+const ethers_1 = require("ethers");
+// Dynamic import for ES Module compatibility
+let secp256k1;
+async function getSecp256k1() {
+    if (!secp256k1) {
+        secp256k1 = await Promise.resolve().then(() => __importStar(require("@noble/secp256k1")));
+    }
+    return secp256k1;
+}
+class HederaAccountService {
     // private emailService = new EmailService();
     // private emailReceipient = process.env.EMAIL_NOTIFICATION || null;
     constructor(config) {
@@ -14,9 +59,9 @@ export class HederaAccountService {
         this.operatorId = operatorId;
         this.operatorKey = operatorKey;
         this.contracts = contracts || {};
-        this.client = Client.forName(this.network);
+        this.client = sdk_1.Client.forName(this.network);
         this.client.setOperator(this.operatorId, this.operatorKey);
-        this.client = Client.forName(this.network);
+        this.client = sdk_1.Client.forName(this.network);
         this.client.setOperator(this.operatorId, this.operatorKey);
     }
     /************************ */
@@ -32,7 +77,7 @@ export class HederaAccountService {
             userPublicKey = publicKey;
         }
         else {
-            userPrivateKey = PrivateKey.generateECDSA();
+            userPrivateKey = sdk_1.PrivateKey.generateECDSA();
             userPublicKey = userPrivateKey.publicKey;
         }
         const operatorId = this.operatorId;
@@ -40,9 +85,9 @@ export class HederaAccountService {
         if (!operatorId || !operatorKey) {
             throw new Error("operator not configured");
         }
-        const tx = new AccountCreateTransaction()
+        const tx = new sdk_1.AccountCreateTransaction()
             .setKey(userPublicKey)
-            .setInitialBalance(new Hbar(15))
+            .setInitialBalance(new sdk_1.Hbar(15))
             .setAlias(userPublicKey.toEvmAddress());
         const txResponse = await tx.execute(this.client);
         const receipt = await txResponse.getReceipt(this.client);
@@ -58,9 +103,9 @@ export class HederaAccountService {
     // Function to register a new device
     async createDeviceAccountAndTopics(deviceName, smartContract, deviceRole, serialNumber, deviceType, price, parentAccountId, parentPublicKey) {
         try {
-            const devicePrivateKey = PrivateKey.generateECDSA();
+            const devicePrivateKey = sdk_1.PrivateKey.generateECDSA();
             const devicePublicKey = devicePrivateKey.publicKey.toString();
-            const requiredBalance = new Hbar(5).toTinybars();
+            const requiredBalance = new sdk_1.Hbar(5).toTinybars();
             const availableBalance = await this.getAccountBalanceTinybars(parentAccountId);
             if (availableBalance.toNumber() < requiredBalance.toNumber()) {
                 throw new Error(`Insufficient sponsor balance. Required: ${requiredBalance} tinybars, Available: ${availableBalance} tinybars`);
@@ -77,7 +122,7 @@ export class HederaAccountService {
             if (!contractId) {
                 throw new Error(`Contract ID not found for smart contract type: ${smartContract}`);
             }
-            const hederaService = new HederaContractService({
+            const hederaService = new ContractService_1.default({
                 network: this.network,
                 operatorId: this.operatorId,
                 operatorKey: this.operatorKey,
@@ -108,7 +153,7 @@ export class HederaAccountService {
                 console.error("Error getting devices:", error);
             }
             // console.log("Devices:", devices);
-            return { accountId, topics, privateKey: devicePrivateKey.toString(), evmAddress: PublicKey.fromString(devicePublicKey).toEvmAddress() };
+            return { accountId, topics, privateKey: devicePrivateKey.toString(), evmAddress: sdk_1.PublicKey.fromString(devicePublicKey).toEvmAddress() };
         }
         catch (error) {
             console.error("Error registering new device:", error);
@@ -118,14 +163,14 @@ export class HederaAccountService {
     // Function to create a device account and related topics
     async createDeviceAndTopics(parentAccountId, devicePrivateKey, devicePublicKey, initialHbar = 1) {
         try {
-            const devicePublicKeyObj = PublicKey.fromString(devicePublicKey);
+            const devicePublicKeyObj = sdk_1.PublicKey.fromString(devicePublicKey);
             const evmAddress = devicePublicKeyObj.toEvmAddress();
             // Ensure initialHbar is always an integer
             const safeInitialHbar = Math.floor(Number(initialHbar));
             console.log('DEBUG: initialHbar (before Hbar):', initialHbar, '->', safeInitialHbar);
-            const accountTx = new AccountCreateTransaction()
+            const accountTx = new sdk_1.AccountCreateTransaction()
                 .setKey(devicePublicKeyObj)
-                .setInitialBalance(new Hbar(safeInitialHbar))
+                .setInitialBalance(new sdk_1.Hbar(safeInitialHbar))
                 .setAlias(evmAddress)
                 .setTransactionMemo("Device of user " + parentAccountId);
             await accountTx.freezeWith(this.client);
@@ -135,8 +180,8 @@ export class HederaAccountService {
                 throw new Error('Account creation failed. No account ID returned.');
             }
             // Step 2: Create topics using the device's private key
-            const devicePrivateKeyObj = PrivateKey.fromString(devicePrivateKey);
-            await this.transferTinybars(newDeviceAccountId.toString(), new Hbar(1).toTinybars());
+            const devicePrivateKeyObj = sdk_1.PrivateKey.fromString(devicePrivateKey);
+            await this.transferTinybars(newDeviceAccountId.toString(), new sdk_1.Hbar(1).toTinybars());
             // Step 3: Create topics for stdIn, stdOut, and stdErr concurrently
             const topicNames = ['stdIn', 'stdOut', 'stdErr'];
             // const topicPromises = topicNames.map(topicName => this.createTopic(this.client, newDeviceAccountId.toString(), devicePrivateKey, topicName + " for account " + newDeviceAccountId.toString()));
@@ -160,10 +205,10 @@ export class HederaAccountService {
     }
     async createTopic(client, accountId, privateKey, topicMemo, submitKey = null) {
         // Set the operator for the client (parent account with private key)
-        client.setOperator(AccountId.fromString(accountId), PrivateKey.fromString(privateKey));
+        client.setOperator(sdk_1.AccountId.fromString(accountId), sdk_1.PrivateKey.fromString(privateKey));
         try {
             // Create a new topic creation transaction
-            const topicCreateTx = new TopicCreateTransaction()
+            const topicCreateTx = new sdk_1.TopicCreateTransaction()
                 .setTopicMemo(topicMemo); // Set the topic memo (topic name)
             if (submitKey) {
                 topicCreateTx.setSubmitKey(submitKey);
@@ -188,7 +233,7 @@ export class HederaAccountService {
     async getAccountBalanceTinybars(accountId) {
         try {
             // Create the account balance query
-            const query = new AccountBalanceQuery()
+            const query = new sdk_1.AccountBalanceQuery()
                 .setAccountId(accountId);
             // Execute the query
             const accountBalance = await query.execute(this.client);
@@ -196,23 +241,23 @@ export class HederaAccountService {
         }
         catch (error) {
             console.error("Error retrieving account balance:", error);
-            return new Long(0);
+            return new long_1.default(0);
         }
     }
-    async transferTinybars(recipientAccountId, transferAmount = new Long(0)) {
+    async transferTinybars(recipientAccountId, transferAmount = new long_1.default(0)) {
         const senderAccount = this.operatorId;
-        const operatorKey = PrivateKey.fromString(this.operatorKey);
+        const operatorKey = sdk_1.PrivateKey.fromString(this.operatorKey);
         try {
             const availableBalance = await this.getAccountBalanceTinybars(senderAccount);
-            const fee = new Hbar(1).toTinybars(); // 1 HBAR in tinybars
+            const fee = new sdk_1.Hbar(1).toTinybars(); // 1 HBAR in tinybars
             if (availableBalance.lessThan(transferAmount.add(fee))) {
                 console.log("Insufficient balance incl. fee.");
                 throw new Error(`Insufficient balance. Needed: ${transferAmount.add(fee)} tinybars, Available: ${availableBalance}`);
             }
-            const sendHbar = await new TransferTransaction()
-                .addHbarTransfer(senderAccount, Hbar.fromTinybars(Long.fromValue(transferAmount).neg().toString()))
-                .addHbarTransfer(recipientAccountId, Hbar.fromTinybars(Long.fromValue(transferAmount).toString()))
-                .setTransactionId(TransactionId.generate(senderAccount))
+            const sendHbar = await new sdk_1.TransferTransaction()
+                .addHbarTransfer(senderAccount, sdk_1.Hbar.fromTinybars(long_1.default.fromValue(transferAmount).neg().toString()))
+                .addHbarTransfer(recipientAccountId, sdk_1.Hbar.fromTinybars(long_1.default.fromValue(transferAmount).toString()))
+                .setTransactionId(sdk_1.TransactionId.generate(senderAccount))
                 .setMaxTransactionFee(fee)
                 .freezeWith(this.client)
                 .sign(operatorKey);
@@ -249,7 +294,7 @@ export class HederaAccountService {
                 ? 'https://mainnet-public.mirrornode.hedera.com'
                 : 'https://testnet.mirrornode.hedera.com';
             // Fetch messages from the mirror node
-            const response = await axios.get(`${mirrorNodeUrl}/api/v1/topics/${topicId}/messages?limit=${batchSize}&order=${order}`);
+            const response = await axios_1.default.get(`${mirrorNodeUrl}/api/v1/topics/${topicId}/messages?limit=${batchSize}&order=${order}`);
             if (!response.data || !response.data.messages) {
                 throw new Error('Invalid response from mirror node');
             }
@@ -289,11 +334,11 @@ export class HederaAccountService {
             // Create a temporary client if using a different account
             let client = this.client;
             if (privateKey && accountId) {
-                client = Client.forName(this.network);
-                client.setOperator(AccountId.fromString(accountId), PrivateKey.fromString(privateKey));
+                client = sdk_1.Client.forName(this.network);
+                client.setOperator(sdk_1.AccountId.fromString(accountId), sdk_1.PrivateKey.fromString(privateKey));
             }
             // Create topic message submission transaction
-            const topicMessageTx = new TopicMessageSubmitTransaction()
+            const topicMessageTx = new sdk_1.TopicMessageSubmitTransaction()
                 .setTopicId(topicId)
                 .setMessage(messageBytes);
             // Execute the transaction
@@ -301,14 +346,14 @@ export class HederaAccountService {
             // Get the receipt
             const receipt = await txResponse.getReceipt(client);
             // Verify the transaction was successful
-            if (receipt.status !== Status.Success) {
+            if (receipt.status !== sdk_1.Status.Success) {
                 throw new Error(`Topic message submission failed with status: ${receipt.status}`);
             }
             // Get the transaction record to access sequence number
             const record = await txResponse.getRecord(client);
             return {
                 receipt,
-                sequenceNumber: receipt.topicSequenceNumber || Long.ZERO
+                sequenceNumber: receipt.topicSequenceNumber || long_1.default.ZERO
             };
         }
         catch (error) {
@@ -321,19 +366,20 @@ export class HederaAccountService {
         // Check if it's a compressed public key (starts with 02 or 03)
         if (cleanPubKey.startsWith('02') || cleanPubKey.startsWith('03')) {
             // Decompress the public key
-            const point = Point.fromHex(cleanPubKey);
+            const secp = await getSecp256k1();
+            const point = secp.Point.fromHex(cleanPubKey);
             const uncompressed = point.toRawBytes(false); // false = uncompressed
             // Remove the 0x04 prefix and hash the remaining 64 bytes
-            const hash = keccak256(uncompressed.slice(1));
+            const hash = (0, ethers_1.keccak256)(uncompressed.slice(1));
             const address = '0x' + hash.slice(-40);
-            return getAddress(address);
+            return (0, ethers_1.getAddress)(address);
         }
         else {
             // For uncompressed public keys (starts with 04)
             const pubKeyWithPrefix = publicKey.startsWith('0x') ? publicKey : '0x' + publicKey;
-            const hash = keccak256(pubKeyWithPrefix);
+            const hash = (0, ethers_1.keccak256)(pubKeyWithPrefix);
             const address = '0x' + hash.slice(-40);
-            return getAddress(address);
+            return (0, ethers_1.getAddress)(address);
         }
     }
     /**
@@ -350,8 +396,8 @@ export class HederaAccountService {
             // Remove '0x' prefix if present
             const cleanEvmAddress = evmAddress.startsWith('0x') ? evmAddress.slice(2) : evmAddress;
             // Create account info query to get the account details
-            const query = new AccountInfoQuery()
-                .setAccountId(AccountId.fromEvmAddress(0, 0, cleanEvmAddress));
+            const query = new sdk_1.AccountInfoQuery()
+                .setAccountId(sdk_1.AccountId.fromEvmAddress(0, 0, cleanEvmAddress));
             // Execute the query
             const accountInfo = await query.execute(this.client);
             // Check if account has an admin key
@@ -367,4 +413,5 @@ export class HederaAccountService {
         }
     }
 }
-export default HederaAccountService;
+exports.HederaAccountService = HederaAccountService;
+exports.default = HederaAccountService;

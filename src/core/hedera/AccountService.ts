@@ -6,8 +6,16 @@ import HederaContractService from "./ContractService";
 import { DIDManager } from "./did/DIDManager";
 import { VCManager } from "./did/VCmanager";
 import { keccak256, getAddress } from "ethers";
-import * as secp256k1 from "@noble/secp256k1";
-const { Point } = secp256k1;
+
+// Dynamic import for ES Module compatibility
+let secp256k1: any;
+
+async function getSecp256k1() {
+    if (!secp256k1) {
+        secp256k1 = await import("@noble/secp256k1");
+    }
+    return secp256k1;
+}
 
 
 export class HederaAccountService {
@@ -439,7 +447,8 @@ async getEvmAddressFromPublicKey(publicKey:string):Promise<string>{
   // Check if it's a compressed public key (starts with 02 or 03)
   if (cleanPubKey.startsWith('02') || cleanPubKey.startsWith('03')) {
     // Decompress the public key
-    const point = Point.fromHex(cleanPubKey);
+    const secp = await getSecp256k1();
+    const point = secp.Point.fromHex(cleanPubKey);
     const uncompressed = point.toRawBytes(false); // false = uncompressed
     
     // Remove the 0x04 prefix and hash the remaining 64 bytes

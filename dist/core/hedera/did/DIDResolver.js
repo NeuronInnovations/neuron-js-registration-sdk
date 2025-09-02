@@ -1,4 +1,7 @@
-export class NeuronDIDResolver {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.NeuronDIDResolver = void 0;
+class NeuronDIDResolver {
     constructor(client, network = "testnet") {
         this.cache = new Map();
         this.client = client;
@@ -65,3 +68,4 @@ export class NeuronDIDResolver {
         this.cache.clear();
     }
 }
+exports.NeuronDIDResolver = NeuronDIDResolver;

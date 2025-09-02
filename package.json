@@ -2,7 +2,6 @@
     "name": "neuron-js-registration-sdk",
     "version": "1.0.0",
     "description": "A project for registering edge devices and issuing VC to users",
-    "type": "module",
     "main": "dist/index.js",
     "scripts": {
         "start": "ts-node src/server/app.ts",

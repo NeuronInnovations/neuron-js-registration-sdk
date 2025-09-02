@@ -1,6 +1,9 @@
-import { TopicCreateTransaction, ReceiptStatusError } from "@hashgraph/sdk";
-import { DIDManager } from "./DIDManager";
-export class DIDInitializer {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DIDInitializer = void 0;
+const sdk_1 = require("@hashgraph/sdk");
+const DIDManager_1 = require("./DIDManager");
+class DIDInitializer {
     constructor(client) {
         this.accountID = process.env.HEDERA_OPERATOR_ID;
         this.client = client;
@@ -16,7 +19,7 @@ export class DIDInitializer {
             console.log(`- Device DIDs Topic: ${didDevicesTopic}`);
             console.log(`- VC Topic: ${vcTopic}`);
             // Step 2: Create Neuron Issuer DID
-            const didManager = new DIDManager(this.client, {
+            const didManager = new DIDManager_1.DIDManager(this.client, {
                 defaultTopicId: didIssuerTopic.toString()
             });
             const neuronEmail = "contact@neuron.com";
@@ -55,7 +58,7 @@ export class DIDInitializer {
             };
         }
         catch (error) {
-            if (error instanceof ReceiptStatusError) {
+            if (error instanceof sdk_1.ReceiptStatusError) {
                 console.error("❌ Hedera Network Error:", error.status.toString());
             }
             else {
@@ -65,7 +68,7 @@ export class DIDInitializer {
         }
     }
     async createTopic(description) {
-        const tx = await new TopicCreateTransaction()
+        const tx = await new sdk_1.TopicCreateTransaction()
             .setTopicMemo(description)
             .execute(this.client);
         const receipt = await tx.getReceipt(this.client);
@@ -75,3 +78,4 @@ export class DIDInitializer {
         return receipt.topicId;
     }
 }
+exports.DIDInitializer = DIDInitializer;

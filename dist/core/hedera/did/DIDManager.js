@@ -1,7 +1,13 @@
-import { PrivateKey, TopicMessageSubmitTransaction } from "@hashgraph/sdk";
-import bs58 from 'bs58';
-import { sha256Hash } from "../../../utils/helpers";
-export class DIDManager {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DIDManager = void 0;
+const sdk_1 = require("@hashgraph/sdk");
+const bs58_1 = __importDefault(require("bs58"));
+const helpers_1 = require("../../../utils/helpers");
+class DIDManager {
     constructor(client, config) {
         this.client = client;
         this.config = config;
@@ -13,7 +19,7 @@ export class DIDManager {
         }
         const network = this.getNetworkString();
         const publicKeyBytes = publicKey.toBytes();
-        const publicKeyBase58 = bs58.encode(publicKeyBytes);
+        const publicKeyBase58 = bs58_1.default.encode(publicKeyBytes);
         // Format: did:hedera:{network}:{base58key}_{accountId}.{topicId}
         return `did:hedera:${network}:${publicKeyBase58}_${topicId}`;
     }
@@ -43,7 +49,7 @@ export class DIDManager {
     }
     async publishDIDOperation(operation, topicId) {
         const message = Buffer.from(JSON.stringify(operation));
-        await new TopicMessageSubmitTransaction()
+        await new sdk_1.TopicMessageSubmitTransaction()
             .setTopicId(topicId)
             .setMessage(message)
             .execute(this.client);
@@ -53,9 +59,9 @@ export class DIDManager {
         if (!deviceDIDFields?.smartContract || !deviceDIDFields.serialNumber) {
             throw new Error("Missing required fields for Device DID");
         }
-        deviceDIDFields.serialNumber = sha256Hash(deviceDIDFields.serialNumber);
+        deviceDIDFields.serialNumber = (0, helpers_1.sha256Hash)(deviceDIDFields.serialNumber);
         const topicId = this.config.defaultTopicId;
-        const privateKey = PrivateKey.generate();
+        const privateKey = sdk_1.PrivateKey.generate();
         const publicKey = privateKey.publicKey;
         const did = this.generateDIDString(topicId, publicKey);
         const deviceFields = JSON.stringify(deviceDetails, null, 2);
@@ -94,7 +100,7 @@ export class DIDManager {
             throw new Error("Missing required fields for AI Agent DID");
         }
         const topicId = this.config.defaultTopicId;
-        const privateKey = PrivateKey.generate();
+        const privateKey = sdk_1.PrivateKey.generate();
         const publicKey = privateKey.publicKey;
         const uniqueId = `${aiAgentDIDFields?.agentType}-${Date.now()}`;
         const did = this.generateDIDString(topicId, privateKey.publicKey);
@@ -129,7 +135,7 @@ export class DIDManager {
     }
     getED25519Raw(privateKey) {
         const publicKeyBytes = privateKey.publicKey.toBytes();
-        const publicKeyBase58 = bs58.encode(publicKeyBytes);
+        const publicKeyBase58 = bs58_1.default.encode(publicKeyBytes);
         const publicKeyMultibase = `z${publicKeyBase58}`;
         return publicKeyMultibase;
     }
@@ -137,9 +143,9 @@ export class DIDManager {
         const { emailDIDFields } = userDetail;
         if (!emailDIDFields?.email)
             throw new Error("User ID is required to create user DID");
-        emailDIDFields.email = sha256Hash(emailDIDFields?.email); // Still using email field name but storing userId
+        emailDIDFields.email = (0, helpers_1.sha256Hash)(emailDIDFields?.email); // Still using email field name but storing userId
         const topicId = this.config.defaultTopicId;
-        const privateKey = PrivateKey.generate();
+        const privateKey = sdk_1.PrivateKey.generate();
         //  const publicKey = privateKey.publicKey;
         const did = this.generateDIDString(topicId, privateKey.publicKey);
         const document = {
@@ -173,3 +179,4 @@ export class DIDManager {
         };
     }
 }
+exports.DIDManager = DIDManager;

@@ -1,12 +1,18 @@
-import { TopicMessageSubmitTransaction, PublicKey } from "@hashgraph/sdk";
-import { decode } from 'multibase';
-import dotenv from 'dotenv';
-import { NeuronDIDResolver } from "./DIDResolver";
-dotenv.config();
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.VCManager = void 0;
+const sdk_1 = require("@hashgraph/sdk");
+const multibase_1 = require("multibase");
+const dotenv_1 = __importDefault(require("dotenv"));
+const DIDResolver_1 = require("./DIDResolver");
+dotenv_1.default.config();
 /**
  * Manages Verifiable Credentials (VCs) in the Hedera network
  */
-export class VCManager {
+class VCManager {
     /**
      * Creates a new VCManager instance
      *
@@ -122,7 +128,7 @@ export class VCManager {
             }
             // TODO: In a production environment, you would need to:
             // 1. Resolve the DID Document from the verification method
-            const resolver = new NeuronDIDResolver(this.client, "testnet");
+            const resolver = new DIDResolver_1.NeuronDIDResolver(this.client, "testnet");
             const didDoc = await resolver.resolve(credential.issuer);
             // 2. Extract the public key from the DID Document
             const verificationMethod = didDoc?.verificationMethod
@@ -132,8 +138,8 @@ export class VCManager {
                 return result;
             }
             // console.log(verificationMethod.publicKeyMultibase);
-            const publicKeyBytes = decode(verificationMethod.publicKeyMultibase);
-            const publicKey = PublicKey.fromBytes(publicKeyBytes);
+            const publicKeyBytes = (0, multibase_1.decode)(verificationMethod.publicKeyMultibase);
+            const publicKey = sdk_1.PublicKey.fromBytes(publicKeyBytes);
             // 3. Verify the signature using the public key
             const { proof: _, ...credentialWithoutProof } = credential;
             const credentialBytes = new TextEncoder().encode(JSON.stringify(credentialWithoutProof));
@@ -210,7 +216,7 @@ export class VCManager {
         try {
             const message = Buffer.from(JSON.stringify(operation));
             // Submit the message to the topic
-            const txResponse = await new TopicMessageSubmitTransaction()
+            const txResponse = await new sdk_1.TopicMessageSubmitTransaction()
                 .setTopicId(this.vcTopicId)
                 .setMessage(message)
                 .execute(this.client);
@@ -248,3 +254,4 @@ export class VCManager {
         ].join('-');
     }
 }
+exports.VCManager = VCManager;
