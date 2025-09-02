@@ -16,9 +16,7 @@ export class HederaAccountService {
     private operatorId: string;
     private operatorKey: string;
     private contracts: Record<string, string>;
-    // private emailService = new EmailService();
-    // private emailReceipient = process.env.EMAIL_NOTIFICATION || null;
-
+  
     constructor(config: {
         network: string;
         operatorId: string;
