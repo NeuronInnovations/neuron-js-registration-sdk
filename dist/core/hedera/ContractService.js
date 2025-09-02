@@ -1,8 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const sdk_1 = require("@hashgraph/sdk");
+import { Client, ContractCallQuery, ContractExecuteTransaction, ContractFunctionParameters, PrivateKey, Hbar } from "@hashgraph/sdk";
 //import dotenv from 'dotenv';
-const ethers_1 = require("ethers");
+import { ethers } from "ethers";
 const contractABI = [
     // Minimal ABI for getDevicesFlatByOwner
     "function getDevicesFlatByOwner(address owner) view returns (uint256, string[], uint64[], uint64[], uint64[], uint256[], uint8[], uint8[])"
@@ -14,7 +12,7 @@ class HederaContractService {
         this.operatorId = operatorId;
         this.operatorKey = operatorKey;
         this.contractId = contractId;
-        this.client = sdk_1.Client.forName(this.network);
+        this.client = Client.forName(this.network);
         this.client.setOperator(operatorId, operatorKey);
     }
     async registerPeers(topics, ipfsHash, serviceIds, prices, devicePrivateKey, deviceAccountId, contractId = this.contractId) {
@@ -23,12 +21,12 @@ class HederaContractService {
         if (!operatorKey) {
             throw new Error("Operator key (OPERATOR_KEY) is not set in the environment variables.");
         }
-        this.client.setOperator(operatorId, sdk_1.PrivateKey.fromString(operatorKey));
+        this.client.setOperator(operatorId, PrivateKey.fromString(operatorKey));
         try {
-            const tx = await new sdk_1.ContractExecuteTransaction()
+            const tx = await new ContractExecuteTransaction()
                 .setContractId(contractId)
                 .setGas(500000)
-                .setFunction("putPeerAvailableSelf", new sdk_1.ContractFunctionParameters()
+                .setFunction("putPeerAvailableSelf", new ContractFunctionParameters()
                 .addUint64(parseInt(topics.stdOut.split('.')[2]))
                 .addUint64(parseInt(topics.stdIn.split('.')[2]))
                 .addUint64(parseInt(topics.stdErr.split('.')[2]))
@@ -46,14 +44,14 @@ class HederaContractService {
     }
     async getPeerArraySize(contractAddress) {
         try {
-            const provider = new ethers_1.ethers.JsonRpcProvider(process.env.HEDERA_RPC);
+            const provider = new ethers.JsonRpcProvider(process.env.HEDERA_RPC);
             // Convert Hedera ID to EVM address if needed
             let evmAddress = contractAddress;
             if (contractAddress.startsWith('0.0.')) {
                 evmAddress = hederaIdToEvmAddress(contractAddress);
                 console.log(`Converted Hedera ID ${contractAddress} to EVM address ${evmAddress}`);
             }
-            const contract = new ethers_1.ethers.Contract(evmAddress, [
+            const contract = new ethers.Contract(evmAddress, [
                 "function getPeerArraySize() view returns (uint256)"
             ], provider);
             const size = await contract.getPeerArraySize();
@@ -102,8 +100,8 @@ class HederaContractService {
    }
   */
     async getDevicesByOwner(contractAddress, ownerAddress) {
-        const provider = new ethers_1.ethers.JsonRpcProvider(process.env.HEDERA_RPC);
-        const contract = new ethers_1.ethers.Contract(contractAddress, contractABI, provider);
+        const provider = new ethers.JsonRpcProvider(process.env.HEDERA_RPC);
+        const contract = new ethers.Contract(contractAddress, contractABI, provider);
         // Add a delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));
         const [deviceCount, peerIDs, stdOutTopics, stdInTopics, stdErrTopics, serviceCounts, flatServiceIDs, flatPrices,] = await contract.getDevicesFlatByOwner(ownerAddress);
@@ -132,12 +130,12 @@ class HederaContractService {
     }
     async getDevicesFlatByOwner(owner, contractId) {
         try {
-            this.client.setOperator(this.operatorId, sdk_1.PrivateKey.fromString(this.operatorKey));
-            const query = new sdk_1.ContractCallQuery()
+            this.client.setOperator(this.operatorId, PrivateKey.fromString(this.operatorKey));
+            const query = new ContractCallQuery()
                 .setContractId(contractId)
                 .setGas(500000)
-                .setQueryPayment(new sdk_1.Hbar(0.2))
-                .setFunction("getDevicesFlatByOwner", new sdk_1.ContractFunctionParameters()
+                .setQueryPayment(new Hbar(0.2))
+                .setFunction("getDevicesFlatByOwner", new ContractFunctionParameters()
                 .addAddress(owner));
             const result = await query.execute(this.client);
             let index = 0;
@@ -167,12 +165,12 @@ class HederaContractService {
     }
     async getDeviceCountByOwner(owner, contractId) {
         try {
-            this.client.setOperator(this.operatorId, sdk_1.PrivateKey.fromString(this.operatorKey));
-            const query = new sdk_1.ContractCallQuery()
+            this.client.setOperator(this.operatorId, PrivateKey.fromString(this.operatorKey));
+            const query = new ContractCallQuery()
                 .setContractId(contractId)
                 .setGas(300000)
-                .setQueryPayment(new sdk_1.Hbar(0.1))
-                .setFunction("getDeviceCountByOwner", new sdk_1.ContractFunctionParameters()
+                .setQueryPayment(new Hbar(0.1))
+                .setFunction("getDeviceCountByOwner", new ContractFunctionParameters()
                 .addAddress(owner));
             const result = await query.execute(this.client);
             return result.getUint256(0).toNumber();
@@ -202,14 +200,14 @@ class HederaContractService {
             console.log("No peers found in contract");
             return [];
         }
-        const provider = new ethers_1.ethers.JsonRpcProvider(process.env.HEDERA_RPC);
+        const provider = new ethers.JsonRpcProvider(process.env.HEDERA_RPC);
         // Convert Hedera ID to EVM address if needed
         let evmAddress = contractAddress;
         if (contractAddress.startsWith('0.0.')) {
             evmAddress = hederaIdToEvmAddress(contractAddress);
             console.log(`Using EVM address ${evmAddress} for ethers.js calls`);
         }
-        const contract = new ethers_1.ethers.Contract(evmAddress, [
+        const contract = new ethers.Contract(evmAddress, [
             "function peerList(uint256) view returns (address)",
             "function getDevicesFlatByOwner(address owner) view returns (uint256, string[], uint64[], uint64[], uint64[], uint256[], uint8[], uint8[])"
         ], provider);
@@ -260,4 +258,4 @@ function hederaIdToEvmAddress(hederaId) {
     const hexAddress = '0x' + contractNum.toString(16).padStart(40, '0');
     return hexAddress;
 }
-exports.default = HederaContractService;
+export default HederaContractService;
